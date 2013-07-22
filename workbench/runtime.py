@@ -189,6 +189,9 @@ def create_xblock(usage, student_id=None):
 
 
 class WorkbenchRuntime(Runtime):
+
+    
+
     def __init__(self, block_cls, student_id, usage):
         super(WorkbenchRuntime, self).__init__()
 
@@ -281,6 +284,9 @@ class WorkbenchRuntime(Runtime):
         )
         data[key] = value
 
+
+    def register_child(self, xml):
+        pass
 
 
 class _BlockSet(object):

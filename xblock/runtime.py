@@ -373,6 +373,10 @@ class Runtime(object):
         return q
 
 
+    def register_child(self, child_node):
+        raise NotImplementedError("Runtime needs to provide register_child()")
+
+
 class RegexLexer(object):
     """Split text into lexical tokens based on regexes."""
     def __init__(self, *toks):
