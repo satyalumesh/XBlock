@@ -10,6 +10,7 @@ from nose.tools import assert_in, assert_equals, assert_raises, \
 from datetime import datetime
 
 from xblock.core import XBlock, XBlockSaveError
+from xblock.serialization import load_xml
 
 # This is such a totally wrong import -- replace with some mock or default
 # Runtime
@@ -24,7 +25,7 @@ def test_html_xblock_from_xml():
             <p>Hello <b>world!</b> </p>
         </html>
     """
-    html_block = XBlock.load(SIMPLE_HTML, Runtime)
+    html_block = load_xml(SIMPLE_HTML, Runtime)
     assert_equals(html_block.content, u"<p>Hello <b>world!</b> </p>")
 
 def test_sequence_from_xml():
@@ -39,7 +40,7 @@ def test_sequence_from_xml():
             </vertical>
         </sequence>
     """
-    seq_block = XBlock.load(SEQ_HTML, Runtime)
+    seq_block = load_xml(SEQ_HTML, Runtime)
     assert_equals(seq_block.foo, u"bar")
     assert_equals(len(seq_block.children), 2)
 
