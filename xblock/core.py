@@ -706,10 +706,12 @@ class XBlock(Plugin):
 
 
     def load_xml(self, xml, register_child_func=None):
-        # By default, all attributes get read in as 
-        # register_child_func should take this block and an XML node, and
-        # return an ID that we can append to our children
-        #
+        """
+        Set attributes of this XBlock based on an XML.
+
+        `xml` is an XML Element (ElementTree) or a basestring of XML content
+        `register_child_func` 
+        """
         # Is it ever valid to load_xml and not pass it a register_child_func?
         # Maybe when you know it's not going to have children... in which case
         # it should throw an exception if it doesn't find any?

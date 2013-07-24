@@ -4,6 +4,7 @@ Code in this file is a mix of Runtime layer and Workbench layer.
 
 """
 
+from collections import namedtuple
 import itertools
 
 try:
@@ -116,6 +117,14 @@ class Usage(object):
         """
         cls._inited.clear()
 
+# FIXME: Just a temp name while we try an experiment :P
+class Usage2(namedtuple('Usage', 'id def_id')):
+    _id = itertools.count()
+
+    @classmethod
+    def generate(cls):
+        return cls(next(cls._id), next(cls._id))
+
 
 class MemoryKeyValueStore(KeyValueStore):
     """Use a simple in-memory database for a key-value store."""
@@ -189,8 +198,6 @@ def create_xblock(usage, student_id=None):
 
 
 class WorkbenchRuntime(Runtime):
-
-    
 
     def __init__(self, block_cls, student_id, usage):
         super(WorkbenchRuntime, self).__init__()
@@ -286,7 +293,10 @@ class WorkbenchRuntime(Runtime):
 
 
     def register_child(self, xml):
-        pass
+        # For the WorkbenchRuntime, it's enough to generate IDs for this child,
+        # and then call load_xml() again on the children -- but where do we
+        # store the result? Store them here and be able to get them back later
+        # from get_block
 
 
 class _BlockSet(object):

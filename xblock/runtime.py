@@ -4,8 +4,9 @@ Machinery to make the common case easy when building new runtimes
 
 import re
 import functools
-
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple, MutableMapping
+
 from .core import ModelType, BlockScope, Scope
 
 
@@ -375,6 +376,65 @@ class Runtime(object):
 
     def register_child(self, child_node):
         raise NotImplementedError("Runtime needs to provide register_child()")
+
+
+class RuntimeSystem(object):
+    """
+    A RuntimeSystem is a self contained piece that holds within it some
+    number of XBlocks and their state management.
+
+    It knows:
+    * Who the user is
+    * What the KVStore is
+
+    It's responsible for:
+    * Creating new XBlocks with the appropriate Runtimes and DbModels
+    * Holding a tree of XBlocks
+    * Maintaining parent/child relationships
+    * As part of ^, maintaining local block_ids
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        self._root_block = None
+
+    @abstractmethod
+    def create_block(self, tag_name):
+        """
+        Given an XML `tag_name`, create a new XBlock. The `RuntimeSystem` gets
+        to decide what `XBlock` will be instantiated (possibly based off of
+        system configuration or user preferences). The `RuntimeSystem` is also
+        responsible for provisioning the appropriate DbModel and Runtime for a
+        given XBlock.
+
+        This method should instantiate an XBlock and return it, but should not
+        do any other initialization (call other methods) on the XBlock.
+        """
+
+    @abstractmethod
+    def register(self, xml):
+        """
+        Accepts an XML Element, and returns a new BlockID. This method will most
+        often be passed into functions that do deserialization of XBlocks. It
+        allows us to defer the actual instantiation of children until they're
+        needed.
+
+        Or maybe it just returns a new Usage ID?
+        """
+
+    @property
+    def root_block(self):
+        return self._root_block
+
+    def save_all(self, xml):
+        pass
+
+    def load_xml(self, xml):
+        self._root_block = serialization.load(xml, self)
+        return self._root_block
+
+    def dump_xml(self):
+        pass
 
 
 class RegexLexer(object):

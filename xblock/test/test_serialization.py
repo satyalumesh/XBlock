@@ -43,5 +43,3 @@ def test_sequence_from_xml():
     seq_block = load_xml(SEQ_HTML, Runtime)
     assert_equals(seq_block.foo, u"bar")
     assert_equals(len(seq_block.children), 2)
-
-# Questions: Logging
