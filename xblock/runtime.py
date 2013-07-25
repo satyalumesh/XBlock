@@ -2,12 +2,14 @@
 Machinery to make the common case easy when building new runtimes
 """
 
-import re
 import functools
+import itertools
+import re
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple, MutableMapping
+from xml.etree import ElementTree as ET
 
-from .core import ModelType, BlockScope, Scope
+from .core import ModelType, BlockScope, Scope, XBlock
 
 
 class InvalidScopeError(Exception):
@@ -60,15 +62,80 @@ class KeyValueStore(object):
         key-value pairs, and set all the `keys` to the given `value`s."""
         pass
 
+class BlockId(namedtuple('BlockId', 'usage_id def_id')):
+    pass
+
+
+class MemoryKeyValueStore(KeyValueStore):
+    """Use a simple in-memory database for a key-value store."""
+
+    def __init__(self, d=None):
+        self.d = d or {}
+        self._ids = itertools.count()
+
+    def clear(self):
+        """Clear all data from the store."""
+        self.d.clear()
+
+    def new_block_id(self):
+        return BlockId(str(next(self._ids)), str(next(self._ids)))
+
+    def actual_key(self, key):
+        k = []
+        if key.scope == Scope.children:
+            k.append('children')
+        elif key.scope == Scope.parent:
+            k.append('parent')
+        else:
+            k.append(["usage", "definition", "type", "all"][key.scope.block])
+
+        if key.block_scope_id is not None:
+            k.append(key.block_scope_id)
+        if key.student_id:
+            k.append(key.student_id)
+        return ".".join(k)
+
+    def get(self, key):
+        return self.d[self.actual_key(key)][key.field_name]
+
+    def set(self, key, value):
+        """Sets the key to the new value"""
+        self.d.setdefault(self.actual_key(key), {})[key.field_name] = value
+
+    def delete(self, key):
+        del self.d[self.actual_key(key)][key.field_name]
+
+    def has(self, key):
+        return key.field_name in self.d[self.actual_key(key)]
+
+    def as_html(self):
+        """Just for our Workbench!"""
+        html = json.dumps(self.d, sort_keys=True, indent=4)
+        return make_safe_for_html(html)
+
+    def set_many(self, update_dict):
+        """
+        Sets many fields to new values in one call.
+
+        `update_dict`: A dictionary of keys: values.
+        This method sets the value of each key to the specified new value.
+        """
+        for key, value in update_dict.items():
+            # We just call `set` directly here, because this is an in-memory 
+            # representation thus we don't concern ourselves with bulk writes.
+            self.set(key, value)
+
+
+
 
 class DbModel(MutableMapping):
     """A dictionary-like interface to the fields on a block."""
 
-    def __init__(self, kvs, block_cls, student_id, usage):
+    def __init__(self, kvs, block_cls, student_id, block_id):
         self._kvs = kvs
         self._student_id = student_id
         self._block_cls = block_cls
-        self._usage = usage
+        self._block_id = block_id
 
     def __repr__(self):
         return "<{0.__class__.__name__} {0._block_cls!r}>".format(self)
@@ -113,7 +180,7 @@ class DbModel(MutableMapping):
         """
         field = self._getfield(name)
         if field.scope in (Scope.children, Scope.parent):
-            block_id = self._usage.id
+            block_id = self._block_id.usage_id
             student_id = None
         else:
             block = field.scope.block
@@ -121,9 +188,9 @@ class DbModel(MutableMapping):
             if block == BlockScope.ALL:
                 block_id = None
             elif block == BlockScope.USAGE:
-                block_id = self._usage.id
+                block_id = self._block_id.usage_id
             elif block == BlockScope.DEFINITION:
-                block_id = self._usage.def_id
+                block_id = self._block_id.def_id
             elif block == BlockScope.TYPE:
                 block_id = self._block_cls.__name__
 
@@ -179,6 +246,7 @@ class DbModel(MutableMapping):
             updated_dict[self._key(key)] = value
 
         self._kvs.set_many(updated_dict)
+
 
 
 class Runtime(object):
@@ -389,17 +457,18 @@ class RuntimeSystem(object):
 
     It's responsible for:
     * Creating new XBlocks with the appropriate Runtimes and DbModels
-    * Holding a tree of XBlocks
+    * Holding a tree of XBlocks in its own pocket universe (if desired)
     * Maintaining parent/child relationships
-    * As part of ^, maintaining local block_ids
+    * Maintaining local block_ids???
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, kv_store=None, student_id=None):
         self._root_block = None
+        self._kv_store = kv_store or MemoryKeyValueStore()
+        self._student_id = student_id
 
-    @abstractmethod
-    def create_block(self, tag_name):
+    def create_block(self, tag_name, block_id=None):
         """
         Given an XML `tag_name`, create a new XBlock. The `RuntimeSystem` gets
         to decide what `XBlock` will be instantiated (possibly based off of
@@ -410,9 +479,18 @@ class RuntimeSystem(object):
         This method should instantiate an XBlock and return it, but should not
         do any other initialization (call other methods) on the XBlock.
         """
+        # Just do the dumb thing and fall back on XBlock's load_class
+        block_cls = self._block_class_for_tag(tag_name)
 
-    @abstractmethod
-    def register(self, xml):
+        block_id = block_id or self._kv_store.new_block_id()
+
+        runtime = self._provision_runtime(block_cls, block_id)
+        model = self._provision_model(block_cls, block_id)
+        block = block_cls(runtime, model)
+
+        return block
+
+    def register(self, xml_el):
         """
         Accepts an XML Element, and returns a new BlockID. This method will most
         often be passed into functions that do deserialization of XBlocks. It
@@ -421,20 +499,46 @@ class RuntimeSystem(object):
 
         Or maybe it just returns a new Usage ID?
         """
+        block_id = self._kv_store.new_block_id()
+        self.create_block(xml_el.tag, block_id)
+
+        return block_id
+
+    def copy(self, kv_store):
+        """Copy the XBlocks contained in this RuntimeSystem to a new
+        KeyValueStore."""
+        pass
+
+    def load_xml(self, xml):
+        root = self._parse_xml(xml)
+        block = self.create_block(root.tag)
+        block.load_xml(root, self.register)
+
+        return block
+
+    def dump_xml(self):
+        pass
 
     @property
     def root_block(self):
         return self._root_block
 
-    def save_all(self, xml):
-        pass
+    # Non-public methods that can be overridden to tweak basic behavior
+    def _block_class_for_tag(self, tag_name):
+        return XBlock.load_class(tag_name)
 
-    def load_xml(self, xml):
-        self._root_block = serialization.load(xml, self)
-        return self._root_block
+    def _provision_runtime(self, block_cls, block_id):
+        return Runtime()
 
-    def dump_xml(self):
-        pass
+    def _provision_model(self, block_cls, block_id):
+        return DbModel(self._kv_store, block_cls, self._student_id, block_id)
+
+
+    # Small helper methods
+    def _parse_xml(self, xml):
+        return ET.fromstring(xml) if isinstance(xml, basestring) else xml
+
+
 
 
 class RegexLexer(object):

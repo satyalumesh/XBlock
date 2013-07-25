@@ -721,6 +721,9 @@ class XBlock(Plugin):
             for child_node in xml:
                 self.children.append(register_child_func(child_node))
 
+    def dump_xml(self):
+        pass
+
 
     def load_attributes(self, attrib):
         for attr_name, attr_val in attrib.items():

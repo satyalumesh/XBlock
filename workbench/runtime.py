@@ -18,7 +18,7 @@ from django.template import loader as django_template_loader,\
     Context as DjangoContext
 
 from xblock.core import XBlock, Scope, ModelType
-from xblock.runtime import DbModel, KeyValueStore, Runtime, NoSuchViewError
+from xblock.runtime import DbModel, MemoryKeyValueStore, Runtime, NoSuchViewError
 from xblock.fragment import Fragment
 
 from workbench.util import make_safe_for_html
@@ -124,61 +124,6 @@ class Usage2(namedtuple('Usage', 'id def_id')):
     @classmethod
     def generate(cls):
         return cls(next(cls._id), next(cls._id))
-
-
-class MemoryKeyValueStore(KeyValueStore):
-    """Use a simple in-memory database for a key-value store."""
-    def __init__(self, d):
-        self.d = d
-
-    def clear(self):
-        """Clear all data from the store."""
-        self.d.clear()
-
-    def actual_key(self, key):
-        k = []
-        if key.scope == Scope.children:
-            k.append('children')
-        elif key.scope == Scope.parent:
-            k.append('parent')
-        else:
-            k.append(["usage", "definition", "type", "all"][key.scope.block])
-
-        if key.block_scope_id is not None:
-            k.append(key.block_scope_id)
-        if key.student_id:
-            k.append(key.student_id)
-        return ".".join(k)
-
-    def get(self, key):
-        return self.d[self.actual_key(key)][key.field_name]
-
-    def set(self, key, value):
-        """Sets the key to the new value"""
-        self.d.setdefault(self.actual_key(key), {})[key.field_name] = value
-
-    def delete(self, key):
-        del self.d[self.actual_key(key)][key.field_name]
-
-    def has(self, key):
-        return key.field_name in self.d[self.actual_key(key)]
-
-    def as_html(self):
-        """Just for our Workbench!"""
-        html = json.dumps(self.d, sort_keys=True, indent=4)
-        return make_safe_for_html(html)
-
-    def set_many(self, update_dict):
-        """
-        Sets many fields to new values in one call.
-
-        `update_dict`: A dictionary of keys: values.
-        This method sets the value of each key to the specified new value.
-        """
-        for key, value in update_dict.items():
-            # We just call `set` directly here, because this is an in-memory representation
-            # thus we don't concern ourselves with bulk writes.
-            self.set(key, value)
 
 
 MEMORY_KVS = MemoryKeyValueStore({})
@@ -297,7 +242,7 @@ class WorkbenchRuntime(Runtime):
         # and then call load_xml() again on the children -- but where do we
         # store the result? Store them here and be able to get them back later
         # from get_block
-
+        pass
 
 class _BlockSet(object):
     def __init__(self, runtime, blocks):

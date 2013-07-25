@@ -10,23 +10,23 @@ from nose.tools import assert_in, assert_equals, assert_raises, \
 from datetime import datetime
 
 from xblock.core import XBlock, XBlockSaveError
-from xblock.serialization import load_xml
+from xblock.runtime import RuntimeSystem
+#from xblock.serialization import load_xml
 
 # This is such a totally wrong import -- replace with some mock or default
 # Runtime
 #from workbench.runtime import WorkbenchRuntime
+# from runtime import Runtime
 
-from runtime import Runtime
-
-def test_html_xblock_from_xml():
-    # Tests that we can load a XBlock from 
-    SIMPLE_HTML = u"""
-        <html>
-            <p>Hello <b>world!</b> </p>
-        </html>
-    """
-    html_block = load_xml(SIMPLE_HTML, Runtime)
-    assert_equals(html_block.content, u"<p>Hello <b>world!</b> </p>")
+# def test_html_xblock_from_xml():
+#     # Tests that we can load a XBlock from 
+#     SIMPLE_HTML = u"""
+#         <html>
+#             <p>Hello <b>world!</b> </p>
+#         </html>
+#     """
+#     html_block = load_xml(SIMPLE_HTML, Runtime)
+#     assert_equals(html_block.content, u"<p>Hello <b>world!</b> </p>")
 
 def test_sequence_from_xml():
     SEQ_HTML = u"""
@@ -40,6 +40,20 @@ def test_sequence_from_xml():
             </vertical>
         </sequence>
     """
-    seq_block = load_xml(SEQ_HTML, Runtime)
+    system = RuntimeSystem()
+    seq_block = system.load_xml(SEQ_HTML)
+
     assert_equals(seq_block.foo, u"bar")
     assert_equals(len(seq_block.children), 2)
+
+    print seq_block.children
+
+    seq_block.save()
+
+    print system._kv_store.d
+
+
+
+    1/0
+
+#    seq_block.dump([Scope.content, Scope.settings], format="xml")
