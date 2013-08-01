@@ -46,9 +46,11 @@ def test_sequence_from_xml():
     assert_equals(seq_block.foo, u"bar")
     assert_equals(len(seq_block.children), 2)
 
+    seq_block.save()
+
     print seq_block.children
 
-    seq_block.save()
+#    seq_block.save()
 
     print system._kv_store.d
 

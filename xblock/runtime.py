@@ -457,11 +457,11 @@ class RuntimeSystem(object):
 
     It's responsible for:
     * Creating new XBlocks with the appropriate Runtimes and DbModels
-    * Holding a tree of XBlocks in its own pocket universe (if desired)
-    * Maintaining parent/child relationships
-    * Maintaining local block_ids???
+    * Holding a tree of XBlocks in its own pocket universe (if desired -- this
+      just means we're shoving it into its own KVStore
+    * Maintaining parent/child relationships?
+    * Maintaining local block_ids?
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, kv_store=None, student_id=None):
         self._root_block = None
@@ -479,7 +479,6 @@ class RuntimeSystem(object):
         This method should instantiate an XBlock and return it, but should not
         do any other initialization (call other methods) on the XBlock.
         """
-        # Just do the dumb thing and fall back on XBlock's load_class
         block_cls = self._block_class_for_tag(tag_name)
 
         block_id = block_id or self._kv_store.new_block_id()
@@ -500,7 +499,8 @@ class RuntimeSystem(object):
         Or maybe it just returns a new Usage ID?
         """
         block_id = self._kv_store.new_block_id()
-        self.create_block(xml_el.tag, block_id)
+        block = self.create_block(xml_el.tag, block_id)
+        block.load_xml(xml_el, self.register)
 
         return block_id
 
@@ -523,8 +523,12 @@ class RuntimeSystem(object):
     def root_block(self):
         return self._root_block
 
+
     # Non-public methods that can be overridden to tweak basic behavior
     def _block_class_for_tag(self, tag_name):
+        """Given a `tag_name`, return the XBlock class that should handle it.
+        Currently just falls back on `XBlock.load_class`.
+        """
         return XBlock.load_class(tag_name)
 
     def _provision_runtime(self, block_cls, block_id):

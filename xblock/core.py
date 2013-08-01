@@ -717,9 +717,16 @@ class XBlock(Plugin):
         # it should throw an exception if it doesn't find any?
         self.load_attributes(xml.attrib)
 
-        if self.has_children:
+        if self.has_children and register_child_func:
             for child_node in xml:
                 self.children.append(register_child_func(child_node))
+
+        # Needed until we fix the issue where Lists aren't getting marked dirty
+        # on appends -- without this, the save() call below will do nothing.
+        self.children = self.children
+
+        self.save()
+
 
     def dump_xml(self):
         pass

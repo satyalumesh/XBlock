@@ -117,14 +117,6 @@ class Usage(object):
         """
         cls._inited.clear()
 
-# FIXME: Just a temp name while we try an experiment :P
-class Usage2(namedtuple('Usage', 'id def_id')):
-    _id = itertools.count()
-
-    @classmethod
-    def generate(cls):
-        return cls(next(cls._id), next(cls._id))
-
 
 MEMORY_KVS = MemoryKeyValueStore({})
 
