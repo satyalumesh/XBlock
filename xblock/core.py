@@ -739,7 +739,14 @@ class XBlock(Plugin):
 
 
     def dump_xml(self):
-        pass
+        el = ElementTree.Element(self.plugin_name)
+        # We're not serializing attributes yet because Cale's re-working how to
+        # access the list of fields.
+        for child_block_id in self.children:
+            child_block = self.runtime.get_block(child_block_id)
+            el.append(child_block.dump_xml())
+
+        return el
 
 
     def load_attributes(self, attrib):
@@ -747,6 +754,11 @@ class XBlock(Plugin):
             # We assign if there are already model attributes for this
             if hasattr(self, attr_name):
                 setattr(self, attr_name, attr_val)
+            else:
+                err_msg = u"Cannot load attribute {} into {}: no matching field."
+                raise ValueError(
+                    err_msg.format(attr_name, self.__class__.__name__)
+                )
 
     def __repr__(self):
         # `XBlock` obtains the `fields` attribute from the `ModelMetaclass`.

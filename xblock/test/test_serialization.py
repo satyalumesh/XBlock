@@ -45,6 +45,14 @@ def test_sequence_from_xml():
     seq_block = system.load_xml(SEQ_HTML)
 
 
+    print seq_block.plugin_name
+    print
+    print
+    # print sorted([name, type(name) for name in dir(seq_block)])
+
+    print type(seq_block.children)
+
+
     print seq_block.children
     print system._kv_store.d
 
