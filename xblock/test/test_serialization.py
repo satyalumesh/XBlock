@@ -31,6 +31,7 @@ from xblock.runtime import RuntimeSystem
 def test_sequence_from_xml():
     SEQ_HTML = u"""
         <sequence foo="bar">
+            <html><b>hi</b> <i>world!</i></html>
             <vertical>
                 <html><p>Hello World!</p></html>
             </vertical>
@@ -43,19 +44,27 @@ def test_sequence_from_xml():
     system = RuntimeSystem()
     seq_block = system.load_xml(SEQ_HTML)
 
+
+    print seq_block.children
+    print system._kv_store.d
+
     assert_equals(seq_block.foo, u"bar")
     assert_equals(len(seq_block.children), 2)
 
+    html_child = system.create_block()
+
+ #   assert_equals(seq_block.children[0].children[0].content,
+ #                 u"<p>Hello World!</p>")
+
     seq_block.save()
 
-    print seq_block.children
 
-#    seq_block.save()
 
-    print system._kv_store.d
 
 
 
     1/0
 
 #    seq_block.dump([Scope.content, Scope.settings], format="xml")
+
+parent_id=None

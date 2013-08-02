@@ -690,7 +690,7 @@ class XBlock(Plugin):
         """The class can adjust a parsed Usage tree."""
         return node
 
-    def __init__(self, runtime, model_data):
+    def __init__(self, runtime, model_data, block_id=None):
         """
         `runtime` is an instance of :class:`xblock.core.Runtime`. Use it to
         access the environment.  It is available in XBlock code as
@@ -703,29 +703,39 @@ class XBlock(Plugin):
         self.runtime = runtime
         self._model_data = model_data
         self._dirty_fields = set()
+        self.id = block_id
 
-
-    def load_xml(self, xml, register_child_func=None):
+    def load_xml(self, xml, parent_id=None, create_block_func=None):
         """
-        Set attributes of this XBlock based on an XML.
+        Set attributes of this XBlock based on an XML Node.
 
-        `xml` is an XML Element (ElementTree) or a basestring of XML content
-        `register_child_func` 
+        `create_block_func` is a method that takes a tag name (string) and
+        returns an instance of an XBlock. The XBlock it returns has not had any
+        data loaded into it, so we have to call load_xml() on it to initialize
+        with state. Once Runtime and RuntimeSystem are unified, we can just call
+        self.runtime.create_block() instead.
         """
-        # Is it ever valid to load_xml and not pass it a register_child_func?
-        # Maybe when you know it's not going to have children... in which case
-        # it should throw an exception if it doesn't find any?
         self.load_attributes(xml.attrib)
+        if parent_id:
+            self.parent = parent_id
 
-        if self.has_children and register_child_func:
+        if self.has_children and create_block_func:
             for child_node in xml:
-                self.children.append(register_child_func(child_node))
+                child_block = create_block_func(child_node.tag)
+                self.children.append(child_block.id)
+                child_block.load_xml(
+                    child_node,
+                    parent_id=self.id,
+                    create_block_func=create_block_func,
+                )
 
         # Needed until we fix the issue where Lists aren't getting marked dirty
         # on appends -- without this, the save() call below will do nothing.
         self.children = self.children
 
         self.save()
+
+        return self
 
 
     def dump_xml(self):

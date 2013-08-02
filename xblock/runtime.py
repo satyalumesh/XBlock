@@ -485,24 +485,9 @@ class RuntimeSystem(object):
 
         runtime = self._provision_runtime(block_cls, block_id)
         model = self._provision_model(block_cls, block_id)
-        block = block_cls(runtime, model)
+        block = block_cls(runtime, model, block_id)
 
         return block
-
-    def register(self, xml_el):
-        """
-        Accepts an XML Element, and returns a new BlockID. This method will most
-        often be passed into functions that do deserialization of XBlocks. It
-        allows us to defer the actual instantiation of children until they're
-        needed.
-
-        Or maybe it just returns a new Usage ID?
-        """
-        block_id = self._kv_store.new_block_id()
-        block = self.create_block(xml_el.tag, block_id)
-        block.load_xml(xml_el, self.register)
-
-        return block_id
 
     def copy(self, kv_store):
         """Copy the XBlocks contained in this RuntimeSystem to a new
@@ -510,14 +495,16 @@ class RuntimeSystem(object):
         pass
 
     def load_xml(self, xml):
-        root = self._parse_xml(xml)
-        block = self.create_block(root.tag)
-        block.load_xml(root, self.register)
+        root_node = self._parse_xml(xml)
+        block = self.create_block(root_node.tag)
+        block.load_xml(root_node, create_block_func=self.create_block)
+
+        self._root_block = block
 
         return block
 
     def dump_xml(self):
-        pass
+        return self.root_block.dump_xml()
 
     @property
     def root_block(self):
