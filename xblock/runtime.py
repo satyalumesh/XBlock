@@ -498,11 +498,6 @@ class RuntimeSystem(object):
         """
         return self._blocks[block_id]
 
-    def copy(self, kv_store):
-        """Copy the XBlocks contained in this RuntimeSystem to a new
-        KeyValueStore."""
-        pass
-
     def load_xml(self, xml):
         """Load a group of XBlocks based on some XML.
 
