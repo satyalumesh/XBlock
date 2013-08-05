@@ -7,9 +7,10 @@ import itertools
 import re
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple, MutableMapping
-from xml.etree import ElementTree as ET
 
-from .core import ModelType, BlockScope, Scope, XBlock
+from lxml import etree
+
+from .core import BlockId, BlockScope, ModelType, Scope, XBlock
 
 
 class InvalidScopeError(Exception):
@@ -61,9 +62,6 @@ class KeyValueStore(object):
         """Abstract set_many method. Implementations should accept an `update_dict` of
         key-value pairs, and set all the `keys` to the given `value`s."""
         pass
-
-class BlockId(namedtuple('BlockId', 'usage_id def_id')):
-    pass
 
 
 class MemoryKeyValueStore(KeyValueStore):
@@ -459,14 +457,18 @@ class RuntimeSystem(object):
     * Creating new XBlocks with the appropriate Runtimes and DbModels
     * Holding a tree of XBlocks in its own pocket universe (if desired -- this
       just means we're shoving it into its own KVStore
-    * Maintaining parent/child relationships?
-    * Maintaining local block_ids?
     """
 
     def __init__(self, kv_store=None, student_id=None):
+        """
+        `kv_store` is a KeyValueStore. This method will construct its own if you
+        omit it.
+        """
         self._root_block = None
         self._kv_store = kv_store or MemoryKeyValueStore()
         self._student_id = student_id
+
+        self._blocks = {}
 
     def create_block(self, tag_name, block_id=None):
         """
@@ -486,8 +488,15 @@ class RuntimeSystem(object):
         runtime = self._provision_runtime(block_cls, block_id)
         model = self._provision_model(block_cls, block_id)
         block = block_cls(runtime, model, block_id)
+        self._blocks[block_id] = block
 
         return block
+
+    def get_block(self, block_id):
+        """
+        Given a `block_id`, return the corresponding instantiated XBlock object.
+        """
+        return self._blocks[block_id]
 
     def copy(self, kv_store):
         """Copy the XBlocks contained in this RuntimeSystem to a new
@@ -495,6 +504,10 @@ class RuntimeSystem(object):
         pass
 
     def load_xml(self, xml):
+        """Load a group of XBlocks based on some XML.
+
+        `xml` is an lxml.etree.Element or a string of XML.
+        """
         root_node = self._parse_xml(xml)
         block = self.create_block(root_node.tag)
         block.load_xml(root_node, create_block_func=self.create_block)
@@ -504,14 +517,22 @@ class RuntimeSystem(object):
         return block
 
     def dump_xml(self):
-        return self.root_block.dump_xml()
+        return self.root_block.dump_xml(self.get_block)
+
+    def dump_xml_str(self, pretty_print=False):
+        return etree.tostring(
+            self.dump_xml(),
+            encoding='utf-8',
+            pretty_print=pretty_print
+        )
 
     @property
     def root_block(self):
         return self._root_block
 
 
-    # Non-public methods that can be overridden to tweak basic behavior
+    ########################### Helper methods ###########################
+
     def _block_class_for_tag(self, tag_name):
         """Given a `tag_name`, return the XBlock class that should handle it.
         Currently just falls back on `XBlock.load_class`.
@@ -524,10 +545,11 @@ class RuntimeSystem(object):
     def _provision_model(self, block_cls, block_id):
         return DbModel(self._kv_store, block_cls, self._student_id, block_id)
 
-
-    # Small helper methods
     def _parse_xml(self, xml):
-        return ET.fromstring(xml) if isinstance(xml, basestring) else xml
+        if isinstance(xml, basestring):
+            parser = etree.XMLParser(strip_cdata=True)
+            return etree.fromstring(xml, parser=parser)
+        return xml
 
 
 

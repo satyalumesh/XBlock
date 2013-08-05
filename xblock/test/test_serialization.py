@@ -41,38 +41,29 @@ def test_sequence_from_xml():
             </vertical>
         </sequence>
     """
+    SEQ2 = u"""
+        <sequence>
+          <html><![CDATA[<b>hi</b> <i>world!</i>]]></html>
+          <vertical>
+            <html><![CDATA[<p>Hello World!</p>]]></html>
+          </vertical>
+          <vertical>
+            <html><![CDATA[<p>Aloha ka kou!</p>]]></html>
+            <html><![CDATA[<p>Aloha a hui hou!</p>]]></html>
+          </vertical>
+        </sequence>
+    """
     system = RuntimeSystem()
     seq_block = system.load_xml(SEQ_HTML)
+    print system.dump_xml_str()
 
-
-    print seq_block.plugin_name
-    print
-    print
-    # print sorted([name, type(name) for name in dir(seq_block)])
-
-    print type(seq_block.children)
-
-
-    print seq_block.children
-    print system._kv_store.d
+    system2 = RuntimeSystem()
+    seq_block2 = system.load_xml(SEQ2)
+    print system.dump_xml_str()
 
     assert_equals(seq_block.foo, u"bar")
-    assert_equals(len(seq_block.children), 2)
+    assert_equals(len(seq_block.children), 3)
 
     html_child = system.create_block()
 
- #   assert_equals(seq_block.children[0].children[0].content,
- #                 u"<p>Hello World!</p>")
 
-    seq_block.save()
-
-
-
-
-
-
-    1/0
-
-#    seq_block.dump([Scope.content, Scope.settings], format="xml")
-
-parent_id=None

@@ -9,12 +9,12 @@ import functools
 import logging
 import inspect
 try:
-    import simplesjson as json  # pylint: disable=F0401
+    import simplejson as json  # pylint: disable=F0401
 except ImportError:
     import json
 from collections import namedtuple
 
-from xml.etree import ElementTree
+from lxml import etree
 from webob import Response
 
 from .plugin import Plugin
@@ -623,6 +623,9 @@ class XBlockMetaclass(
 
 # -- Base Block
 
+class BlockId(namedtuple('BlockId', 'usage_id def_id')):
+    pass
+
 
 class XBlock(Plugin):
     """Base class for XBlocks.
@@ -699,6 +702,11 @@ class XBlock(Plugin):
         `model_data` is a dictionary-like interface to runtime storage.
         XBlock uses it to implement your storage fields.
 
+        `block_id` is a BlockId that represents the usage and definition
+        identity of this XBlock. It defaults to None for now so as to not break
+        backwards compatibility, but the eventual idea is for it to be a
+        required field here, as opposed to being stored seperately in this
+        object's `runtime` and `model_data` attributes.
         """
         self.runtime = runtime
         self._model_data = model_data
@@ -707,7 +715,20 @@ class XBlock(Plugin):
 
     def load_xml(self, xml, parent_id=None, create_block_func=None):
         """
-        Set attributes of this XBlock based on an XML Node.
+        Set attributes of this XBlock based on an XML Element. If there are any
+        child elements, it will call `load_xml` on them recursively.
+
+        This is primarily intended as a way to load an XBlock or group of
+        XBlocks from a human-readable XML definition. The real serialization of
+        an XBlock would be the sum of its model variables grouped by Scope. This
+        is a sort of fuzzy de-serialization that conflates things in those
+        scopes, so you can do things like mix content and settings. A lot of our
+        existing XML is like this.
+
+        `xml` is an `lxml.etree.Element`
+
+        `parent_id` is a `BlockId` of the XBlock that is a parent to this XML
+        Element.
 
         `create_block_func` is a method that takes a tag name (string) and
         returns an instance of an XBlock. The XBlock it returns has not had any
@@ -738,18 +759,32 @@ class XBlock(Plugin):
         return self
 
 
-    def dump_xml(self):
-        el = ElementTree.Element(self.plugin_name)
-        # We're not serializing attributes yet because Cale's re-working how to
-        # access the list of fields.
+    def dump_xml(self, get_block_func):
+        """
+        Dump the state of this XBlock into 
+
+        TODO: We're not serializing attributes yet because Cale's re-working
+        how to access the list of fields.
+
+        TODO: Replace `get_block_func` with call to self.runtime.get_block()
+        when Runtime and RuntimeSystem are unified.
+        """
+        el = etree.Element(self.plugin_name)
+
+
         for child_block_id in self.children:
-            child_block = self.runtime.get_block(child_block_id)
-            el.append(child_block.dump_xml())
+            child_block = get_block_func(child_block_id)
+            el.append(child_block.dump_xml(get_block_func))
 
         return el
 
 
     def load_attributes(self, attrib):
+        """Given a dictionary `attrib`, which is a mapping from field names to 
+        values, assign those values to the corresponding attributes on this
+        XBlock.
+        """
+
         for attr_name, attr_val in attrib.items():
             # We assign if there are already model attributes for this
             if hasattr(self, attr_name):
