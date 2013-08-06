@@ -60,6 +60,11 @@ class Usage(object):
         for child in self.children:
             child.parent = self
 
+    @property
+    def usage_id(self):
+        """Temp function to make this compatible with BlockIds"""
+        return self.id
+
     def store_initial_state(self):
         """Ensure that the initial state of this Usage is created.
 
@@ -119,8 +124,6 @@ class Usage(object):
         cls._inited.clear()
 
 
-<<<<<<< HEAD
-=======
 class MemoryKeyValueStore(KeyValueStore):
     """Use a simple in-memory database for a key-value store."""
     def __init__(self, db_dict):

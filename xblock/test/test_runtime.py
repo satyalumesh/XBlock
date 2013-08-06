@@ -4,7 +4,7 @@ from nose.tools import assert_equals, assert_false, assert_true, assert_raises  
 from collections import namedtuple
 from mock import patch, Mock
 
-from xblock.core import BlockScope, Namespace, Scope, String, XBlock
+from xblock.core import BlockId, BlockScope, Namespace, Scope, String, XBlock
 from xblock.runtime import NoSuchViewError, KeyValueStore, DbModel, Runtime
 from xblock.fragment import Fragment
 from xblock.test import DictKeyValueStore
@@ -88,9 +88,6 @@ with patch('xblock.core.Namespace.load_classes', return_value=[('test', TestName
         for_all = String(scope=Scope(False, BlockScope.ALL), default='fa')
         user_def = String(scope=Scope(True, BlockScope.DEFINITION), default='sd')
 
-# Allow this tuple to be named as if it were a class
-TestUsage = namedtuple('TestUsage', 'id, def_id')  # pylint: disable=C0103
-
 
 def check_field(collection, field):
     """
@@ -114,7 +111,7 @@ def check_field(collection, field):
 
 
 def test_namespace_actions():
-    tester = TestModel(Mock(), DbModel(DictKeyValueStore(), TestModel, 's0', TestUsage('u0', 'd0')))
+    tester = TestModel(Mock(), DbModel(DictKeyValueStore(), TestModel, 's0', BlockId('u0', 'd0')))
     # `test` is a namespace provided by the patch when TestModel is defined, which ultimately
     # comes from the NamespacesMetaclass. Since this is not understood by static
     # analysis, silence this error for the duration of this test.
@@ -128,7 +125,7 @@ def test_db_model_keys():
     # Tests that updates to fields are properly recorded in the KeyValueStore,
     # and that the keys have been constructed correctly
     key_store = DictKeyValueStore()
-    db_model = DbModel(key_store, TestModel, 's0', TestUsage('u0', 'd0'))
+    db_model = DbModel(key_store, TestModel, 's0', BlockId('u0', 'd0'))
     tester = TestModel(Mock(), db_model)
 
     assert_false('not a field' in db_model)
@@ -215,7 +212,7 @@ def test_runtime_handle():
     # Test a simple handler and a fallback handler
 
     key_store = DictKeyValueStore()
-    db_model = DbModel(key_store, TestXBlock, 's0', TestUsage('u0', 'd0'))
+    db_model = DbModel(key_store, TestXBlock, 's0', BlockId('u0', 'd0'))
     tester = TestXBlock(Mock(), db_model)
     runtime = MockRuntimeForQuerying()
     # string we want to update using the handler
@@ -239,7 +236,7 @@ def test_runtime_handle():
 
 def test_runtime_render():
     key_store = DictKeyValueStore()
-    db_model = DbModel(key_store, TestXBlock, 's0', TestUsage('u0', 'd0'))
+    db_model = DbModel(key_store, TestXBlock, 's0', BlockId('u0', 'd0'))
     tester = TestXBlock(Mock(), db_model)
     runtime = MockRuntimeForQuerying()
     # string we want to update using the handler
