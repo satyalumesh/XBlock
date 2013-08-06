@@ -1,12 +1,17 @@
 """
 Machinery to make the common case easy when building new runtimes
 """
-
+import cgi
 import functools
 import itertools
 import re
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple, MutableMapping
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from lxml import etree
 
@@ -115,7 +120,7 @@ class MemoryKeyValueStore(KeyValueStore):
     def as_html(self):
         """Just for our Workbench!"""
         html = json.dumps(self.d, sort_keys=True, indent=4)
-        return make_safe_for_html(html)
+        return cgi.escape(html)
 
     def set_many(self, update_dict):
         """

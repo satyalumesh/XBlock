@@ -124,66 +124,6 @@ class Usage(object):
         cls._inited.clear()
 
 
-class MemoryKeyValueStore(KeyValueStore):
-    """Use a simple in-memory database for a key-value store."""
-    def __init__(self, db_dict):
-        self.db_dict = db_dict
-
-    def clear(self):
-        """Clear all data from the store."""
-        self.db_dict.clear()
-
-    def actual_key(self, key):
-        """
-        Constructs the full key name from the given `key`.
-
-        The actual key consists of the scope, block scope id, and student_id.
-
-        """
-        key_list = []
-        if key.scope == Scope.children:
-            key_list.append('children')
-        elif key.scope == Scope.parent:
-            key_list.append('parent')
-        else:
-            key_list.append(["usage", "definition", "type", "all"][key.scope.block])
-
-        if key.block_scope_id is not None:
-            key_list.append(key.block_scope_id)
-        if key.student_id:
-            key_list.append(key.student_id)
-        return ".".join(key_list)
-
-    def get(self, key):
-        return self.db_dict[self.actual_key(key)][key.field_name]
-
-    def set(self, key, value):
-        """Sets the key to the new value"""
-        self.db_dict.setdefault(self.actual_key(key), {})[key.field_name] = value
-
-    def delete(self, key):
-        del self.db_dict[self.actual_key(key)][key.field_name]
-
-    def has(self, key):
-        return key.field_name in self.db_dict[self.actual_key(key)]
-
-    def as_html(self):
-        """Just for our Workbench!"""
-        html = json.dumps(self.db_dict, sort_keys=True, indent=4)
-        return make_safe_for_html(html)
-
-    def set_many(self, update_dict):
-        """
-        Sets many fields to new values in one call.
-
-        `update_dict`: A dictionary of keys: values.
-        This method sets the value of each key to the specified new value.
-        """
-        for key, value in update_dict.items():
-            # We just call `set` directly here, because this is an in-memory representation
-            # thus we don't concern ourselves with bulk writes.
-            self.set(key, value)
-
 
 MEMORY_KVS = MemoryKeyValueStore({})
 

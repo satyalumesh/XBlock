@@ -64,6 +64,4 @@ def test_sequence_from_xml():
     assert_equals(seq_block.foo, u"bar")
     assert_equals(len(seq_block.children), 3)
 
-    html_child = system.create_block()
-
 
