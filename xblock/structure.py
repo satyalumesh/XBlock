@@ -13,7 +13,7 @@ class Sequence(XBlock):
     has_children = True
 
     # FIXME: Just to make sure the default attribute assignment works
-    foo = String(help="The HTML to display", scope=Scope.content, default=u"DEFAULT")
+    title = String(help="Title of this sequence", scope=Scope.content, default=u"")
 
     def student_view(self, context):
         """Provide default student view."""
