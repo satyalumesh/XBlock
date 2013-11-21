@@ -65,7 +65,7 @@ class HtmlBlock(XBlock):
     @staticmethod
     def workbench_scenarios():
         return [
-            ("A litte HTML", """
+            ("A little HTML", """
                 <vertical>
                 <html>
                 <h2>Gettysburg Address</h2>

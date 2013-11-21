@@ -441,9 +441,12 @@ class EqualityCheckerBlock(CheckerBlock):
                 <% }} %>
             </script>
             """.format(
-                correct=self.runtime.resources_url('images/correct-icon.png'),
-                incorrect=self.runtime.resources_url('images/incorrect-icon.png')),
+                correct=self.runtime.local_resource_url(
+                    ProblemBlock, 'static/images/correct-icon.png'),
+                incorrect=self.runtime.local_resource_url(
+                    ProblemBlock, 'static/images/incorrect-icon.png')),
             "text/html")
+
 
         result.add_javascript("""
             function EqualityCheckerBlock(runtime, element) {

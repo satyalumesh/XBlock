@@ -111,7 +111,7 @@ def handler(request, usage_id, handler_slug, suffix=''):
     return webob_to_django_response(result)
 
 
-def package_resource(_request, package, resource):
+def package_resource(_request, package, xblock_class, resource):
     """
     Wrapper for `pkg_resources` that tries to access a resource and, if it
     is not found, raises an Http404 error.
@@ -119,7 +119,9 @@ def package_resource(_request, package, resource):
     if ".." in resource:
         raise Http404
     try:
-        content = pkg_resources.resource_string(package, "static/" + resource)
+        xblock_pkg = __import__(package, fromlist=[xblock_class])
+        xblock_class = getattr(xblock_pkg, xblock_class)
+        content = xblock_class.get_local_resource(resource)
     except IOError:
         raise Http404
     mimetype, _ = mimetypes.guess_type(resource)

@@ -5,6 +5,7 @@ and used by all runtimes.
 
 """
 import functools
+import pkg_resources
 try:
     import simplesjson as json  # pylint: disable=F0401
 except ImportError:
@@ -114,6 +115,11 @@ class XBlock(Plugin):
         for name, class_ in cls.load_classes():
             if tag in class_._class_tags:
                 yield name, class_
+
+    @classmethod
+    def get_local_resource(cls, uri):
+        """Load a local resource."""
+        return pkg_resources.resource_stream(cls.__module__, uri)
 
     def __init__(self, runtime, field_data, scope_ids):
         """

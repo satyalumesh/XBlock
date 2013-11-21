@@ -25,7 +25,10 @@ urlpatterns = patterns(
         'handler',
         name='handler'
     ),
-    url(r'^resource/(?P<package>[^/]+)/(?P<resource>.*)$', 'package_resource', name='package_resource'),
+    url(
+        r'^resource/(?P<package>[^/]+)/(?P<xblock_class>[^/]+)/(?P<resource>.*)$',
+        'package_resource',
+        name='package_resource'),
 )
 
 urlpatterns += staticfiles_urlpatterns()
