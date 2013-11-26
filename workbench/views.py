@@ -121,7 +121,7 @@ def package_resource(_request, package, xblock_class, resource):
     try:
         xblock_pkg = __import__(package, fromlist=[xblock_class])
         xblock_class = getattr(xblock_pkg, xblock_class)
-        content = xblock_class.get_local_resource(resource)
+        content = xblock_class.open_local_resource(resource)
     except IOError:
         raise Http404
     mimetype, _ = mimetypes.guess_type(resource)

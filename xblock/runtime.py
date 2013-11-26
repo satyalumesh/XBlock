@@ -461,7 +461,7 @@ class Runtime(object):
         `block` is the XBlock that owns the resource.
 
         `uri` is a relative URI to the resource. The XBlock class's
-             get_local_resource(uri) method should be able to open the resource
+             open_local_resource(uri) method should be able to open the resource
              identified by this uri.
 
         The return value is a complete absolute URL which will locate the
@@ -625,7 +625,7 @@ class Mixologist(object):
                 # overwrite it
                 return _CLASS_CACHE.setdefault(mixin_key, type(
                     base_class.__name__ + 'WithMixins',
-                    (base_class, ) + mixins,
+                    (base_class,) + mixins,
                     {'unmixed_class': base_class}
                 ))
         else:

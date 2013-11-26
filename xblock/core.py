@@ -117,7 +117,7 @@ class XBlock(Plugin):
                 yield name, class_
 
     @classmethod
-    def get_local_resource(cls, uri):
+    def open_local_resource(cls, uri):
         """Load a local resource."""
         return pkg_resources.resource_stream(cls.__module__, uri)
 
