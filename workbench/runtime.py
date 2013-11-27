@@ -212,8 +212,8 @@ class WorkbenchRuntime(Runtime):
     def resources_url(self, resource):
         return "/static/" + resource
 
-    def local_resource_url(self, xblock_class, uri):
-        return '/resource/%s/%s/%s' % (xblock_class.__module__, xblock_class.__name__, uri)
+    def local_resource_url(self, block, uri):
+        return '/resource/%s/%s' % (block.scope_ids.block_type, uri)
 
     def query(self, block):
         return _BlockSet(self, [block])

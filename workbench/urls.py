@@ -26,7 +26,7 @@ urlpatterns = patterns(
         name='handler'
     ),
     url(
-        r'^resource/(?P<package>[^/]+)/(?P<xblock_class>[^/]+)/(?P<resource>.*)$',
+        r'^resource/(?P<block_type>[^/]+)/(?P<resource>.*)$',
         'package_resource',
         name='package_resource'),
 )
