@@ -402,12 +402,6 @@ class EqualityCheckerBlock(CheckerBlock):
     right = Any(scope=Scope.user_state)
     attempted = Boolean(scope=Scope.user_state)
 
-    @classmethod
-    def open_local_resource(cls, uri):
-        # Verify the URI is  in whitelisted form before opening for serving.
-        assert re.match('static/images/[a-z\-]+\.[a-z]+$', uri)
-        return pkg_resources.resource_stream(cls.__module__, uri)
-
     def problem_view(self, context=None):
         """Renders the problem view.
 
@@ -450,9 +444,9 @@ class EqualityCheckerBlock(CheckerBlock):
             </script>
             """.format(
                 correct=self.runtime.local_resource_url(
-                    self, 'static/images/correct-icon.png'),
+                    self, 'public/images/correct-icon.png'),
                 incorrect=self.runtime.local_resource_url(
-                    self, 'static/images/incorrect-icon.png')),
+                    self, 'public/images/incorrect-icon.png')),
             "text/html")
 
 

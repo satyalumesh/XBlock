@@ -6,6 +6,7 @@ and used by all runtimes.
 """
 import functools
 import pkg_resources
+import re
 try:
     import simplesjson as json  # pylint: disable=F0401
 except ImportError:
@@ -126,13 +127,21 @@ class XBlock(Plugin):
         back to this method. The XBlock must parse this URI and return an open
         file-like object for the resource.
 
-        WARNING: The XBlock must verify that the URI specifies a legitimate
-        resource. At the least, the URI should be matched against a whitelist
-        regex to ensure that you do not serve an unauthorized resource.
-
-        See a sample implementation in problem.EqualityBlock.
+        For security reasons, the default implementation will return only a
+        very restricted set of file types, which must be located in a folder
+        called "public". XBlock authors who want to override this behavior
+        will need to take care to ensure that the method only serves legitimate
+        public resources. At the least, the URI should be matched against a
+        whitelist regex to ensure that you do not serve an unauthorized resource.
         """
-        raise NotImplementedError("Local resource loader unimplemented")
+
+        # Verify the URI is in whitelisted form before opening for serving.
+        # URI must begin with public/, all file/folder names must use only
+        # characters from [a-zA-Z0-9\-], and the file type must be one of
+        # jpg, jpeg, png, gif, js, css
+        assert re.match(
+            '^public/([a-zA-Z0-9\-]+/)*[a-zA-Z0-9\-]+\.(jpg|jpeg|png|gif|js|css)$', uri)
+        return pkg_resources.resource_stream(cls.__module__, uri)
 
     def __init__(self, runtime, field_data, scope_ids):
         """
